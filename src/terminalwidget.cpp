@@ -3,7 +3,6 @@
 #include <QTextCursor>
 #include <QTextBlock>
 #include <QScrollBar>
-#include <QApplication>
 #include <QDir>
 #include <QFontDatabase>
 
@@ -14,7 +13,7 @@ TerminalWidget::TerminalWidget(QWidget *parent) : QPlainTextEdit(parent), m_proc
     setStyleSheet("QPlainTextEdit { background:#101318; color:#e6edf3; selection-background-color:#264f78; border:0; padding:8px; }");
     connect(m_process, &QProcess::readyReadStandardOutput, this, [this] { appendOutput(m_process->readAllStandardOutput()); });
     connect(m_process, &QProcess::readyReadStandardError, this, [this] { appendOutput(m_process->readAllStandardError()); });
-    connect(m_process, qOverload<int,QProcess::ExitStatus>(&QProcess::finished), this, [this](int code, QProcess::ExitStatus){ emit exitStatusChanged(code); });
+    connect(m_process, qOverload<int,QProcess::ExitStatus>(&QProcess::finished), this, [this](int code, QProcess::ExitStatus) { if (m_exitStatusCallback) m_exitStatusCallback(code); });
 }
 
 void TerminalWidget::start(const QString &shell, const QString &workingDir) {
@@ -27,34 +26,14 @@ void TerminalWidget::start(const QString &shell, const QString &workingDir) {
 }
 
 void TerminalWidget::appendOutput(const QByteArray &data) {
-    QString text = QString::fromLocal8Bit(data);
-    text.replace("\r", "");
-    moveCursor(QTextCursor::End);
-    insertPlainText(text);
-    m_promptPosition = textCursor().position();
-    verticalScrollBar()->setValue(verticalScrollBar()->maximum());
+    QString text = QString::fromLocal8Bit(data); text.replace("\r", ""); moveCursor(QTextCursor::End); insertPlainText(text); m_promptPosition = textCursor().position(); verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 }
-
-void TerminalWidget::sendCommand(const QString &command) {
-    if (m_process->state() == QProcess::Running) m_process->write(command.toLocal8Bit() + "\n");
-}
-
+void TerminalWidget::sendCommand(const QString &command) { if (m_process->state() == QProcess::Running) m_process->write(command.toLocal8Bit() + "\n"); }
 void TerminalWidget::stop() { m_process->terminate(); }
-
 void TerminalWidget::keyPressEvent(QKeyEvent *event) {
-    if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) {
-        if (m_process->state() == QProcess::Running) m_process->write("\x03");
-        return;
-    }
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-        QTextCursor c = textCursor(); c.movePosition(QTextCursor::End); setTextCursor(c);
-        const QString line = document()->lastBlock().text();
-        if (m_process->state() == QProcess::Running) m_process->write(line.toLocal8Bit() + "\n");
-        QPlainTextEdit::keyPressEvent(event);
-        m_promptPosition = textCursor().position();
-        return;
-    }
-    if (event->key() == Qt::Key_Backspace && textCursor().position() <= m_promptPosition) return;
-    if ((event->key() == Qt::Key_Up || event->key() == Qt::Key_Down || event->key() == Qt::Key_Left) && textCursor().position() < m_promptPosition) return;
+    if (event->key() == Qt::Key_C && event->modifiers() & Qt::ControlModifier) { if (m_process->state() == QProcess::Running) m_process->write("\x03"); return; }
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) { QTextCursor c=textCursor(); c.movePosition(QTextCursor::End); setTextCursor(c); const QString line=document()->lastBlock().text(); if(m_process->state()==QProcess::Running) m_process->write(line.toLocal8Bit()+"\n"); QPlainTextEdit::keyPressEvent(event); m_promptPosition=textCursor().position(); return; }
+    if(event->key()==Qt::Key_Backspace && textCursor().position()<=m_promptPosition) return;
+    if((event->key()==Qt::Key_Up||event->key()==Qt::Key_Down||event->key()==Qt::Key_Left)&&textCursor().position()<m_promptPosition) return;
     QPlainTextEdit::keyPressEvent(event);
 }
