@@ -1,10 +1,13 @@
+```cpp
 #pragma once
 
 #include <QColor>
 #include <QFont>
 #include <QPlainTextEdit>
 #include <QProcess>
+#include <QString>
 #include <functional>
+#include <utility>
 
 class TerminalWidget : public QPlainTextEdit {
 public:
@@ -13,23 +16,45 @@ public:
     void start(const QString &shell, const QString &workingDir);
     void sendCommand(const QString &command);
     void stop();
-    void setTerminalColors(const QColor &background, const QColor &foreground, const QColor &selection);
+
+    void setTerminalColors(
+        const QColor &background,
+        const QColor &foreground,
+        const QColor &selection);
+
     void setTerminalFont(const QFont &font);
     void setScrollback(int lines);
-    QProcess *process() const { return m_process; }
+
+    QProcess *process() const {
+        return m_process;
+    }
 
     using ExitStatusCallback = std::function<void(int)>;
-    void setExitStatusCallback(ExitStatusCallback callback) { m_exitStatusCallback = std::move(callback); }
+
+    void setExitStatusCallback(ExitStatusCallback callback) {
+        m_exitStatusCallback = std::move(callback);
+    }
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    QProcess *m_process;
+    QProcess *m_process = nullptr;
+
     QString m_shell;
-    QString m_prompt = "kuznix$ ";
+    QString m_workingDirectory;
+
+    // This must exactly match the prompt exported to bash.
+    const QString m_prompt = QStringLiteral("kuznix$ ");
+
+    // Position immediately after the visible shell prompt.
     int m_promptPosition = 0;
+
     ExitStatusCallback m_exitStatusCallback;
+
     void appendOutput(const QByteArray &data);
     QString stripAnsi(const QString &text) const;
+
+    void updatePromptPosition();
 };
+```
