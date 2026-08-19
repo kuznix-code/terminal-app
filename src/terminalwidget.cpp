@@ -1,6 +1,7 @@
 #include "terminalwidget.h"
 #include <QKeyEvent>
 #include <QTextCursor>
+#include <QTextBlock>
 #include <QScrollBar>
 #include <QApplication>
 #include <QDir>
