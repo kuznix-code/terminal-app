@@ -11,20 +11,8 @@
 #include "terminalwidget.h"
 
 class MainWindow : public QMainWindow {
-    Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-
-private slots:
-    void newTerminal();
-    void closeTerminal(int index);
-    void openBuildSettings();
-    void runBuild();
-    void runConfigure();
-    void runInstall();
-    void chooseDirectory();
-    void showSystemInfo();
-    void applyBuildSettings();
 
 private:
     QTabWidget *tabs;
@@ -47,6 +35,15 @@ private:
     TerminalWidget *terminal() const;
     QString expandedJobs() const;
     QStringList environmentList() const;
+    void newTerminal();
+    void closeTerminal(int index);
+    void openBuildSettings();
+    void runBuild();
+    void runConfigure();
+    void runInstall();
+    void chooseDirectory();
+    void showSystemInfo();
+    void applyBuildSettings();
     void runCommand(const QString &command, const QString &label);
     void updateTitle();
 };
