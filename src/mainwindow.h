@@ -1,13 +1,15 @@
 #pragma once
+
+#include <QCheckBox>
+#include <QColor>
+#include <QComboBox>
+#include <QFont>
+#include <QLineEdit>
 #include <QMainWindow>
 #include <QSettings>
-#include <QProcess>
-#include <QTabWidget>
 #include <QSpinBox>
-#include <QLineEdit>
-#include <QComboBox>
-#include <QPlainTextEdit>
-#include <QCheckBox>
+#include <QTabWidget>
+
 #include "terminalwidget.h"
 
 class MainWindow : public QMainWindow {
@@ -15,35 +17,43 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
 
 private:
-    QTabWidget *tabs;
+    QTabWidget *tabs = nullptr;
     QSettings settings;
-    QLineEdit *projectDir;
-    QComboBox *buildSystem;
-    QLineEdit *makeFlags;
-    QSpinBox *jobs;
-    QSpinBox *ninjaJobs;
-    QSpinBox *cargoJobs;
-    QLineEdit *cmakeArgs;
-    QLineEdit *mesonArgs;
-    QLineEdit *cargoArgs;
-    QLineEdit *extraEnv;
-    QCheckBox *useNproc;
-    QCheckBox *useCompilerCache;
-    QCheckBox *verboseBuild;
+
+    // Build settings window controls. These are only read while that window exists.
+    QLineEdit *projectDir = nullptr;
+    QComboBox *buildSystem = nullptr;
+    QSpinBox *jobs = nullptr;
+    QSpinBox *ninjaJobs = nullptr;
+    QSpinBox *cargoJobs = nullptr;
+    QLineEdit *makeFlags = nullptr;
+    QLineEdit *cmakeArgs = nullptr;
+    QLineEdit *mesonArgs = nullptr;
+    QLineEdit *cargoArgs = nullptr;
+    QLineEdit *extraEnv = nullptr;
+    QCheckBox *useNproc = nullptr;
+    QCheckBox *useCompilerCache = nullptr;
+    QCheckBox *verboseBuild = nullptr;
     QWidget *buildPanel = nullptr;
 
     TerminalWidget *terminal() const;
-    QString expandedJobs() const;
-    QStringList environmentList() const;
+    QString projectPath() const;
+    QString shellQuote(const QString &value) const;
+    QString detectBuildSystem(const QString &dir) const;
     void newTerminal();
     void closeTerminal(int index);
     void openBuildSettings();
+    void openPreferences();
     void runBuild();
     void runConfigure();
     void runInstall();
+    void runClean();
     void chooseDirectory();
     void showSystemInfo();
+    void showBuildEnvironment();
     void applyBuildSettings();
+    void applyTerminalSettings();
     void runCommand(const QString &command, const QString &label);
     void updateTitle();
+    void applyThemeToAllTerminals();
 };
