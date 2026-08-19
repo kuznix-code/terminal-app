@@ -1,4 +1,3 @@
-```cpp
 #pragma once
 
 #include <QColor>
@@ -54,7 +53,5 @@ private:
 
     void appendOutput(const QByteArray &data);
     QString stripAnsi(const QString &text) const;
-
     void updatePromptPosition();
 };
-```
