@@ -13,7 +13,7 @@ TerminalWidget::TerminalWidget(QWidget *parent) : QPlainTextEdit(parent), m_proc
     setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
     setMaximumBlockCount(10000);
     setCursorWidth(2);
-    setStyleSheet("QPlainTextEdit { background:#0f141a; color:#e8edf2; selection-background-color:#316ac5; border:1px solid #687585; padding:6px; }");
+    setFrameStyle(QFrame::StyledPanel | QFrame::Sunken);
 
     connect(m_process, &QProcess::readyReadStandardOutput, this, [this] { appendOutput(m_process->readAllStandardOutput()); });
     connect(m_process, &QProcess::readyReadStandardError, this, [this] { appendOutput(m_process->readAllStandardError()); });
