@@ -20,7 +20,6 @@ private:
     QTabWidget *tabs = nullptr;
     QSettings settings;
 
-    // Build settings window controls. These are only read while that window exists.
     QLineEdit *projectDir = nullptr;
     QComboBox *buildSystem = nullptr;
     QSpinBox *jobs = nullptr;
@@ -30,10 +29,17 @@ private:
     QLineEdit *cmakeArgs = nullptr;
     QLineEdit *mesonArgs = nullptr;
     QLineEdit *cargoArgs = nullptr;
+    QLineEdit *customCommand = nullptr;
     QLineEdit *extraEnv = nullptr;
+    QLineEdit *cflags = nullptr;
+    QLineEdit *cxxflags = nullptr;
+    QLineEdit *ldflags = nullptr;
+    QLineEdit *installPrefix = nullptr;
+    QLineEdit *buildDir = nullptr;
     QCheckBox *useNproc = nullptr;
     QCheckBox *useCompilerCache = nullptr;
     QCheckBox *verboseBuild = nullptr;
+    QCheckBox *autoConfigure = nullptr;
     QWidget *buildPanel = nullptr;
 
     TerminalWidget *terminal() const;
