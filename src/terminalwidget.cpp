@@ -5,7 +5,6 @@
 #include <QKeyEvent>
 #include <QRegularExpression>
 #include <QScrollBar>
-#include <QTextBlock>
 #include <QTextCursor>
 
 TerminalWidget::TerminalWidget(QWidget *parent) : QPlainTextEdit(parent), m_process(new QProcess(this)) {
@@ -16,12 +15,8 @@ TerminalWidget::TerminalWidget(QWidget *parent) : QPlainTextEdit(parent), m_proc
     setCursorWidth(2);
     setStyleSheet("QPlainTextEdit { background:#0f141a; color:#e8edf2; selection-background-color:#316ac5; border:1px solid #687585; padding:6px; }");
 
-    connect(m_process, &QProcess::readyReadStandardOutput, this, [this] {
-        appendOutput(m_process->readAllStandardOutput());
-    });
-    connect(m_process, &QProcess::readyReadStandardError, this, [this] {
-        appendOutput(m_process->readAllStandardError());
-    });
+    connect(m_process, &QProcess::readyReadStandardOutput, this, [this] { appendOutput(m_process->readAllStandardOutput()); });
+    connect(m_process, &QProcess::readyReadStandardError, this, [this] { appendOutput(m_process->readAllStandardError()); });
     connect(m_process, qOverload<int, QProcess::ExitStatus>(&QProcess::finished), this,
             [this](int code, QProcess::ExitStatus) {
                 if (m_exitStatusCallback) m_exitStatusCallback(code);
@@ -31,7 +26,6 @@ TerminalWidget::TerminalWidget(QWidget *parent) : QPlainTextEdit(parent), m_proc
 
 void TerminalWidget::start(const QString &shell, const QString &workingDir) {
     if (m_process->state() != QProcess::NotRunning) return;
-
     m_shell = shell.isEmpty() ? qEnvironmentVariable("SHELL", "/bin/bash") : shell;
     m_process->setWorkingDirectory(workingDir.isEmpty() ? QDir::homePath() : workingDir);
 
@@ -41,14 +35,12 @@ void TerminalWidget::start(const QString &shell, const QString &workingDir) {
     env.insert("NO_COLOR", "1");
     env.insert("CLICOLOR", "0");
     env.insert("PROMPT_COMMAND", "");
-    env.insert("PS1", "kuznix$ ");
+    env.insert("PS1", m_prompt);
     env.insert("PS2", "> ");
     m_process->setProcessEnvironment(env);
-
     m_process->start(m_shell, {"-i"});
-    if (!m_process->waitForStarted(1500)) {
+    if (!m_process->waitForStarted(1500))
         appendPlainText("Kuznix Terminal: failed to start shell: " + m_process->errorString());
-    }
 }
 
 QString TerminalWidget::stripAnsi(const QString &text) const {
@@ -62,11 +54,16 @@ QString TerminalWidget::stripAnsi(const QString &text) const {
 }
 
 void TerminalWidget::appendOutput(const QByteArray &data) {
-    QString text = stripAnsi(QString::fromLocal8Bit(data));
-    text.replace('\r', '');
+    const QString text = stripAnsi(QString::fromLocal8Bit(data)).replace('\r', '');
+    if (text.isEmpty()) return;
     moveCursor(QTextCursor::End);
     insertPlainText(text);
-    m_promptPosition = textCursor().position();
+
+    const int promptInChunk = text.lastIndexOf(m_prompt);
+    if (promptInChunk >= 0)
+        m_promptPosition = textCursor().position() - text.length() + promptInChunk + m_prompt.length();
+    else if (m_promptPosition > textCursor().position())
+        m_promptPosition = textCursor().position();
     verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 }
 
@@ -75,6 +72,7 @@ void TerminalWidget::sendCommand(const QString &command) {
         appendPlainText("Kuznix Terminal: shell is not running.");
         return;
     }
+    moveCursor(QTextCursor::End);
     m_process->write(command.toLocal8Bit());
     m_process->write("\n");
 }
@@ -100,17 +98,20 @@ void TerminalWidget::keyPressEvent(QKeyEvent *event) {
         if (m_process->state() == QProcess::Running) m_process->write("\x03");
         return;
     }
+
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
         QTextCursor cursor = textCursor();
         cursor.movePosition(QTextCursor::End);
-        setTextCursor(cursor);
-        const QString line = document()->lastBlock().text();
-        if (m_process->state() == QProcess::Running) m_process->write(line.toLocal8Bit() + "\n");
-        QPlainTextEdit::keyPressEvent(event);
+        cursor.setPosition(m_promptPosition, QTextCursor::KeepAnchor);
+        const QString command = cursor.selectedText();
+        if (m_process->state() == QProcess::Running) m_process->write(command.toLocal8Bit() + "\n");
+        moveCursor(QTextCursor::End);
+        QPlainTextEdit::insertPlainText("\n");
         m_promptPosition = textCursor().position();
         return;
     }
+
+    if (textCursor().position() < m_promptPosition) moveCursor(QTextCursor::End);
     if (event->key() == Qt::Key_Backspace && textCursor().position() <= m_promptPosition) return;
-    if ((event->key() == Qt::Key_Left || event->key() == Qt::Key_Up || event->key() == Qt::Key_Down) && textCursor().position() < m_promptPosition) return;
     QPlainTextEdit::keyPressEvent(event);
 }
