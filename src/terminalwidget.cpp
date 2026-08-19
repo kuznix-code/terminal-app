@@ -54,7 +54,8 @@ QString TerminalWidget::stripAnsi(const QString &text) const {
 }
 
 void TerminalWidget::appendOutput(const QByteArray &data) {
-    const QString text = stripAnsi(QString::fromLocal8Bit(data)).replace('\r', '');
+    QString text = stripAnsi(QString::fromLocal8Bit(data));
+    text.remove(QChar('\r'));
     if (text.isEmpty()) return;
     moveCursor(QTextCursor::End);
     insertPlainText(text);
