@@ -4,6 +4,7 @@
 #include <QScrollBar>
 #include <QApplication>
 #include <QDir>
+#include <QFontDatabase>
 
 TerminalWidget::TerminalWidget(QWidget *parent) : QPlainTextEdit(parent), m_process(new QProcess(this)) {
     setUndoRedoEnabled(false);
@@ -21,9 +22,7 @@ void TerminalWidget::start(const QString &shell, const QString &workingDir) {
     m_process->setWorkingDirectory(workingDir.isEmpty() ? QDir::homePath() : workingDir);
     m_process->setProcessEnvironment(QProcessEnvironment::systemEnvironment());
     m_process->start(m_shell, {"-i"});
-    if (!m_process->waitForStarted(1500)) {
-        appendPlainText("Failed to start shell: " + m_process->errorString());
-    }
+    if (!m_process->waitForStarted(1500)) appendPlainText("Failed to start shell: " + m_process->errorString());
 }
 
 void TerminalWidget::appendOutput(const QByteArray &data) {
@@ -46,17 +45,15 @@ void TerminalWidget::keyPressEvent(QKeyEvent *event) {
         if (m_process->state() == QProcess::Running) m_process->write("\x03");
         return;
     }
-    if (event->key() == Qt::Key_Backspace && textCursor().position() <= m_promptPosition) return;
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
         QTextCursor c = textCursor(); c.movePosition(QTextCursor::End); setTextCursor(c);
-        QString line = document()->lastBlock().text();
+        const QString line = document()->lastBlock().text();
         if (m_process->state() == QProcess::Running) m_process->write(line.toLocal8Bit() + "\n");
         QPlainTextEdit::keyPressEvent(event);
         m_promptPosition = textCursor().position();
         return;
     }
-    if (event->key() == Qt::Key_Up || event->key() == Qt::Key_Down || event->key() == Qt::Key_Left) {
-        if (textCursor().position() < m_promptPosition) return;
-    }
+    if (event->key() == Qt::Key_Backspace && textCursor().position() <= m_promptPosition) return;
+    if ((event->key() == Qt::Key_Up || event->key() == Qt::Key_Down || event->key() == Qt::Key_Left) && textCursor().position() < m_promptPosition) return;
     QPlainTextEdit::keyPressEvent(event);
 }
