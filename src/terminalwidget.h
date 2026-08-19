@@ -1,9 +1,9 @@
 #pragma once
 
-#include <QPlainTextEdit>
-#include <QProcess>
 #include <QColor>
 #include <QFont>
+#include <QPlainTextEdit>
+#include <QProcess>
 #include <functional>
 
 class TerminalWidget : public QPlainTextEdit {
@@ -27,6 +27,7 @@ protected:
 private:
     QProcess *m_process;
     QString m_shell;
+    QString m_prompt = "kuznix$ ";
     int m_promptPosition = 0;
     ExitStatusCallback m_exitStatusCallback;
     void appendOutput(const QByteArray &data);
